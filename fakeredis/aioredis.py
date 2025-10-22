@@ -43,7 +43,12 @@ class AsyncFakeSocket(_fakesocket.FakeSocket):
         try:
             async with async_timeout(timeout if timeout else None):
                 while True:
-                    await event.wait()
+                    # Poll with small timeout to allow event loop to schedule other tasks
+                    try:
+                        await asyncio.wait_for(event.wait(), timeout=0.01)
+                    except asyncio.TimeoutError:
+                        # Timeout expired, loop again to check overall timeout
+                        continue
                     event.clear()
                     # This is a coroutine outside the normal control flow that
                     # locks the server, so we have to take our own lock.
