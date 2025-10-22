@@ -63,6 +63,7 @@ class AsyncFakeSocket(_fakesocket.FakeSocket):
             with self._server.lock:
                 self._db.remove_change_callback(callback)
             self.put_response(result)
+            self.resume()
 
     def _blocking(
         self,
@@ -79,7 +80,7 @@ class AsyncFakeSocket(_fakesocket.FakeSocket):
             loop.call_soon_threadsafe(event.set)
 
         self._db.add_change_callback(callback)
-        # Don't pause - allow other commands to be processed concurrently
+        self.pause()
         loop.create_task(self._async_blocking(timeout, func, event, callback))
         return _helpers.NoResponse()
 
